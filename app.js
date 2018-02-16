@@ -16,8 +16,8 @@ router.get('/api/phonenumbers/parse/text/:phoneNum',(req, res) => {
 	var num = req.params.phoneNum.toString().replace(/\D/g, '');
 	var list = [];
 
-	if(req.params.phoneNum == 'nothing' || req.params.phoneNum == '' || num.length < 10 || num.length > 11){
-		res.status(400).send([]);
+	if(num.length < 10 || num.length > 11 || (num.toString().charAt(0) != "1" && num.length == 11)){
+		res.status(400).send("Invalid Number");
 	}
 	else{
 		var phoneNumber = phoneUtil.parse(num, 'CA');
@@ -56,19 +56,20 @@ app.post('/api/phonenumbers/parse/file', function(req, res) {
 		}
 	}).single('userFile');
 	upload(req, res, function(err) {
-		var buffer = fs.readFileSync(req.file.path);
-		buffer.toString().split(/\n/).forEach(function(line){
-			try {
-				var num = line.replace(/\D/g, '');	//get rid of alphabetic characters
-				var temp = phoneUtil.parse(num,'CA');
-				if(!isEmpty(temp) && phoneUtil.isValidNumber(temp)){
-					list.push(phoneUtil.format(temp,PNF.INTERNATIONAL));
-				}
-			} catch(err) {
-
-			}
-		});
-		res.status(200).send(list);
+		try{
+			var buffer = fs.readFileSync(req.file.path);
+			buffer.toString().split(/\n/).forEach(function(line){
+					var num = line.replace(/\D/g, '');	//get rid of alphabetic characters
+					var temp = phoneUtil.parse(num,'CA');
+					if(!isEmpty(temp) && phoneUtil.isValidNumber(temp)){
+						list.push(phoneUtil.format(temp,PNF.INTERNATIONAL));
+					}
+			});
+			res.status(200).send(list);
+		}
+		catch (err){
+			res.status(400).send("Bad File");
+		}
 	})
 });
 
