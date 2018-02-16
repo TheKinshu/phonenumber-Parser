@@ -62,10 +62,9 @@ app.post('/api/phonenumbers/parse/file', function(req, res) {
 		
 			buffer.toString().split(/\n/).forEach(function(line){
 				try{
-					var num = line.replace(/\D/g, '');	//get rid of alphabetic characters
-					var temp = phoneUtil.parse(num,'CA');
-					if(!isEmpty(temp) && phoneUtil.isValidNumber(temp)){
-						list.push(phoneUtil.format(temp,PNF.INTERNATIONAL));
+					var num = phoneUtil.parse(line.replace(/\D/g, ''),'CA');//get rid of alphabetic characters
+					if(!isEmpty(num) && phoneUtil.isValidNumber(num)){
+						list.push(phoneUtil.format(num,PNF.INTERNATIONAL));
 					}
 				}
 				catch(err){
