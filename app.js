@@ -16,8 +16,8 @@ router.get('/api/phonenumbers/parse/text/:phoneNum',(req, res) => {
 	var num = req.params.phoneNum.toString().replace(/\D/g, '');
 	var list = [];
 
-	if(req.params.phoneNum == 'nothing' || req.params.phoneNum == '' || num.length < 10 || num.length > 11){
-		res.status(400).send([]);
+	if(num.length < 10 || num.length > 11 || (num.toString().charAt(0) != "1" && num.length == 11)){
+		res.status(400).send("Invalid Number");
 	}
 	else{
 		var phoneNumber = phoneUtil.parse(num, 'CA');
@@ -45,30 +45,38 @@ var storage = multer.diskStorage({
 
 app.post('/api/phonenumbers/parse/file', function(req, res) {
 	var list = [];
+	var validFile = true;
 	var upload = multer({
 		storage: storage,
 		fileFilter: function(req, file, callback) {
-			var ext = path.extname(file.originalname)
-			if (ext !== '.txt') {
+			if (path.extname(file.originalname) !== '.txt') {
+				validFile = false
 				return callback(res.end('Only text are allowed'), null)
 			}
 			callback(null, true)
 		}
 	}).single('userFile');
 	upload(req, res, function(err) {
-		var buffer = fs.readFileSync(req.file.path);
-		buffer.toString().split(/\n/).forEach(function(line){
-			try {
-				var num = line.replace(/\D/g, '');	//get rid of alphabetic characters
-				var temp = phoneUtil.parse(num,'CA');
-				if(!isEmpty(temp) && phoneUtil.isValidNumber(temp)){
-					list.push(phoneUtil.format(temp,PNF.INTERNATIONAL));
+		try{
+			var buffer = fs.readFileSync(req.file.path);
+		
+			buffer.toString().split(/\n/).forEach(function(line){
+				try{
+					var num = phoneUtil.parse(line.replace(/\D/g, ''),'CA');//get rid of alphabetic characters
+					if(!isEmpty(num) && phoneUtil.isValidNumber(num)){
+						list.push(phoneUtil.format(num,PNF.INTERNATIONAL));
+					}
 				}
-			} catch(err) {
-
-			}
-		});
+				catch(err){
+				}	
+			});
 		res.status(200).send(list);
+		}
+		catch (err){
+			if(validFile){
+				res.status(400).send("Invalid file");
+			}
+		}	
 	})
 });
 
