@@ -83,7 +83,7 @@ app.listen(9000, () => {
 
 function parseBufferForNumbers(buffer, res){
 	var list = [];
-	buffer.toString().split(/[\n\s]/).forEach(function(line){
+	buffer.toString().split(/\n/).forEach(function(line){
 		try{
 			var num = phoneUtil.parse(line.replace(/\D/g, ''),'CA');//get rid of alphabetic characters
 			if(!isEmpty(num) && phoneUtil.isValidNumber(num)){
