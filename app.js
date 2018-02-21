@@ -3,6 +3,7 @@ const app = express();
 const router = express.Router();
 const multer = require('multer');
 
+
 var path = require('path');
 var upload = multer({ dest: 'uploads/' });
 var PNF = require('google-libphonenumber').PhoneNumberFormat;
@@ -10,8 +11,6 @@ var phoneUtil = require('google-libphonenumber').PhoneNumberUtil.getInstance();
 var fs = require('fs');
 // Speed up calls to hasOwnProperty
 var hasOwnProperty = Object.prototype.hasOwnProperty;
-// For handling .docx documents
-var textract = require('textract');
 
 router.get('/api/phonenumbers/parse/text/:phoneNum',(req, res) => {
 	var num = req.params.phoneNum.toString().replace(/\D/g, '');
@@ -45,27 +44,33 @@ var storage = multer.diskStorage({
 });
 
 app.post('/api/phonenumbers/parse/file', function(req, res) {
+	var list = [];
 	var validFile = true;
 	var upload = multer({
 		storage: storage,
 		fileFilter: function(req, file, callback) {
-			if (path.extname(file.originalname) !== '.txt' && path.extname(file.originalname) !== '.docx') {
+			if (path.extname(file.originalname) !== '.txt') {
 				validFile = false
-				return callback(res.end('Only .txt or .docx files are allowed'), null)
+				return callback(res.end('Only text are allowed'), null)
 			}
 			callback(null, true)
 		}
 	}).single('userFile');
 	upload(req, res, function(err) {
 		try{
-			if(path.extname(req.file.originalname) == '.docx'){		//for .docx files
-				textract.fromFileWithPath(req.file.path, function( error, buffer ) {
-					parseBufferForNumbers(buffer, res);
-				});
-			}
-			else{													//For .txt files
-				parseBufferForNumbers(buffer, res);
-			}
+			var buffer = fs.readFileSync(req.file.path);
+		
+			buffer.toString().split(/\n/).forEach(function(line){
+				try{
+					var num = phoneUtil.parse(line.replace(/\D/g, ''),'CA');//get rid of alphabetic characters
+					if(!isEmpty(num) && phoneUtil.isValidNumber(num)){
+						list.push(phoneUtil.format(num,PNF.INTERNATIONAL));
+					}
+				}
+				catch(err){
+				}	
+			});
+		res.status(200).send(list);
 		}
 		catch (err){
 			if(validFile){
@@ -81,20 +86,7 @@ app.listen(9000, () => {
 	console.log("Server started");
 });
 
-function parseBufferForNumbers(buffer, res){
-	var list = [];
-	buffer.toString().split(/\n/).forEach(function(line){
-		try{
-			var num = phoneUtil.parse(line.replace(/\D/g, ''),'CA');//get rid of alphabetic characters
-			if(!isEmpty(num) && phoneUtil.isValidNumber(num)){
-				list.push(phoneUtil.format(num,PNF.INTERNATIONAL));
-			}
-		}
-		catch(err){
-		}
-	});
-	res.status(200).send(list);
-}
+
 
 function isEmpty(obj) {
 
