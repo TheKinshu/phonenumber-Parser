@@ -59,11 +59,12 @@ app.post('/api/phonenumbers/parse/file', function(req, res) {
 	upload(req, res, function(err) {
 		try{
 			if(path.extname(req.file.originalname) == '.docx'){		//for .docx files
-				textract.fromFileWithPath(req.file.path, function( error, buffer ) {
+				textract.fromFileWithPath(req.file.path, {preserveLineBreaks: true}, function( error, buffer ) {
 					parseBufferForNumbers(buffer, res);
 				});
 			}
 			else{													//For .txt files
+				var buffer = fs.readFileSync(req.file.path);
 				parseBufferForNumbers(buffer, res);
 			}
 		}
